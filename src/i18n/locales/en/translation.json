@@ -76,9 +76,9 @@
         "name": "SenseVoice",
         "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
       },
-      "gemini-api": {
-        "name": "Gemini API",
-        "description": "Cloud-based transcription via Google Gemini. Requires API key and internet."
+      "openrouter-api": {
+        "name": "OpenRouter API",
+        "description": "Cloud-based transcription via OpenRouter. Requires API key and internet."
       }
     },
     "errors": {
@@ -455,15 +455,27 @@
       "postProcessed": "Post-processed",
       "action": "Action {{key}}"
     },
-    "gemini": {
-      "title": "Gemini API",
-      "description": "Use Google's Gemini API for cloud-based transcription. Requires an API key.",
+    "openrouterCloud": {
+      "title": "OpenRouter Cloud",
+      "description": "Use OpenRouter for cloud-based transcription. Requires an API key and a model.",
       "apiKey": "API Key",
-      "apiKeyPlaceholder": "Enter your Gemini API key",
+      "apiKeyPlaceholder": "Enter your OpenRouter API key",
       "model": "Model",
-      "modelDescription": "Select which Gemini model to use for transcription",
-      "apiKeyRequired": "API Key Required",
-      "apiKeyRequiredDescription": "Enter your Google Gemini API key to use cloud transcription.",
+      "modelDescription": "Set the OpenRouter model ID to use for cloud transcription.",
+      "modelPlaceholder": "openai/gpt-4o-mini-transcribe",
+      "configRequired": "OpenRouter Configuration Required",
+      "configRequiredDescription": "Configure both the OpenRouter API key and cloud model before selecting this transcription model.",
+      "refreshModels": "Refresh models",
+      "testTitle": "Connection Test",
+      "testDescription": "Validate your OpenRouter cloud transcription configuration.",
+      "testButton": "Test OpenRouter Cloud",
+      "testPostProcessButton": "Test OpenRouter",
+      "testOpenRouterHint": "Switch provider to OpenRouter to run this test.",
+      "testing": "Testing...",
+      "modelsLoaded": "{{count}} models loaded",
+      "testSuccess": "OpenRouter validation succeeded.",
+      "testSuccessWithTranscript": "OpenRouter validation succeeded. Transcript: {{transcript}}",
+      "postProcessTestSuccess": "OpenRouter post-processing test succeeded. Response: {{response}}",
       "save": "Save",
       "cancel": "Cancel"
     },

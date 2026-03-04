@@ -10,18 +10,20 @@ interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
   onModelSelect: (modelId: string) => void;
-  hasGeminiKey?: boolean;
+  hasOpenRouterCloudConfig?: boolean;
 }
 
 const ModelDropdown: React.FC<ModelDropdownProps> = ({
   models,
   currentModelId,
   onModelSelect,
-  hasGeminiKey = false,
+  hasOpenRouterCloudConfig = false,
 }) => {
   const { t } = useTranslation();
   const downloadedModels = models.filter(
-    (m) => m.is_downloaded && (m.id !== "gemini-api" || hasGeminiKey),
+    (m) =>
+      m.is_downloaded &&
+      (m.id !== "openrouter-api" || hasOpenRouterCloudConfig),
   );
 
   const handleModelClick = (modelId: string) => {

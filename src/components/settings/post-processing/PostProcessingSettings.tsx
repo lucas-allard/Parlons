@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 
@@ -302,11 +302,257 @@ export const PostProcessingActions = React.memo(
 );
 PostProcessingActions.displayName = "PostProcessingActions";
 
+const PostProcessingApiSettings: React.FC = () => {
+  const { t } = useTranslation();
+  const {
+    getSetting,
+    setPostProcessProvider,
+    updatePostProcessApiKey,
+    updatePostProcessBaseUrl,
+    updatePostProcessModel,
+    fetchPostProcessModels,
+    postProcessModelOptions,
+  } = useSettings();
+
+  const providers = getSetting("post_process_providers") || [];
+  const selectedProviderId =
+    (getSetting("post_process_provider_id") as string | undefined) || "";
+  const selectedProvider = providers.find((p) => p.id === selectedProviderId);
+  const apiKeyMap = getSetting("post_process_api_keys") || {};
+  const baseUrl = selectedProvider?.base_url || "";
+  const modelMap = getSetting("post_process_models") || {};
+  const selectedModel =
+    (modelMap[selectedProviderId] as string | undefined) || "";
+  const currentApiKey = (apiKeyMap[selectedProviderId] as string | undefined) || "";
+
+  const [apiKeyInput, setApiKeyInput] = useState(currentApiKey);
+  const [baseUrlInput, setBaseUrlInput] = useState(baseUrl);
+  const [modelInput, setModelInput] = useState(selectedModel);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [isTestingOpenRouter, setIsTestingOpenRouter] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<{
+    type: "idle" | "success" | "error";
+    text: string;
+  }>({ type: "idle", text: "" });
+
+  useEffect(() => {
+    setApiKeyInput(currentApiKey);
+  }, [currentApiKey, selectedProviderId]);
+
+  useEffect(() => {
+    setBaseUrlInput(baseUrl);
+  }, [baseUrl, selectedProviderId]);
+
+  useEffect(() => {
+    setModelInput(selectedModel);
+  }, [selectedModel, selectedProviderId]);
+
+  const providerOptions = useMemo(
+    () => providers.map((p) => ({ value: p.id, label: p.label })),
+    [providers],
+  );
+
+  const availableModels = postProcessModelOptions[selectedProviderId] || [];
+  const modelOptions = useMemo(
+    () => availableModels.map((value) => ({ value, label: value })),
+    [availableModels],
+  );
+
+  const handleProviderChange = async (providerId: string) => {
+    setValidationMessage({ type: "idle", text: "" });
+    await setPostProcessProvider(providerId);
+  };
+
+  const handleRefreshModels = async () => {
+    if (!selectedProviderId) return;
+    setValidationMessage({ type: "idle", text: "" });
+    setIsFetchingModels(true);
+    try {
+      const models = await fetchPostProcessModels(selectedProviderId);
+      setValidationMessage({
+        type: "success",
+        text: t("settings.openrouterCloud.modelsLoaded", { count: models.length }),
+      });
+    } catch (error) {
+      setValidationMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setIsFetchingModels(false);
+    }
+  };
+
+  const handleTestOpenRouter = async () => {
+    setIsTestingOpenRouter(true);
+    setValidationMessage({ type: "idle", text: "" });
+    try {
+      const result = await commands.validateOpenrouterPostProcess();
+      if (result.status === "ok") {
+        setValidationMessage({
+          type: "success",
+          text: t("settings.openrouterCloud.postProcessTestSuccess", {
+            response: result.data,
+          }),
+        });
+      } else {
+        setValidationMessage({ type: "error", text: result.error });
+      }
+    } catch (error) {
+      setValidationMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setIsTestingOpenRouter(false);
+    }
+  };
+
+  return (
+    <SettingContainer
+      title={t("settings.postProcessing.api.title")}
+      description={t("settings.postProcessing.api.provider.description")}
+      descriptionMode="tooltip"
+      layout="stacked"
+      grouped={true}
+    >
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <label className="text-sm font-semibold">
+            {t("settings.postProcessing.api.provider.title")}
+          </label>
+          <Dropdown
+            selectedValue={selectedProviderId || null}
+            options={providerOptions}
+            onSelect={handleProviderChange}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-semibold">
+            {t("settings.postProcessing.api.apiKey.title")}
+          </label>
+          <Input
+            type="password"
+            value={apiKeyInput}
+            onChange={(e) => setApiKeyInput(e.target.value)}
+            onBlur={() =>
+              selectedProviderId &&
+              updatePostProcessApiKey(selectedProviderId, apiKeyInput)
+            }
+            placeholder={t("settings.postProcessing.api.apiKey.placeholder")}
+            variant="compact"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-semibold">
+            {t("settings.postProcessing.api.baseUrl.title")}
+          </label>
+          <Input
+            type="text"
+            value={baseUrlInput}
+            onChange={(e) => setBaseUrlInput(e.target.value)}
+            onBlur={() =>
+              selectedProvider?.allow_base_url_edit &&
+              selectedProviderId &&
+              updatePostProcessBaseUrl(selectedProviderId, baseUrlInput)
+            }
+            disabled={!selectedProvider?.allow_base_url_edit}
+            placeholder={t("settings.postProcessing.api.baseUrl.placeholder")}
+            variant="compact"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-semibold">
+            {t("settings.postProcessing.api.model.title")}
+          </label>
+          <div className="flex items-center gap-2">
+            {modelOptions.length > 0 ? (
+              <Dropdown
+                selectedValue={modelInput || null}
+                options={modelOptions}
+                onSelect={(value) => {
+                  setModelInput(value);
+                  if (selectedProviderId) {
+                    updatePostProcessModel(selectedProviderId, value);
+                  }
+                }}
+                placeholder={t(
+                  "settings.postProcessing.api.model.placeholderWithOptions",
+                )}
+                className="flex-1"
+              />
+            ) : (
+              <Input
+                type="text"
+                value={modelInput}
+                onChange={(e) => setModelInput(e.target.value)}
+                onBlur={() =>
+                  selectedProviderId &&
+                  updatePostProcessModel(selectedProviderId, modelInput)
+                }
+                placeholder={t("settings.postProcessing.api.model.placeholderNoOptions")}
+                variant="compact"
+                className="flex-1"
+              />
+            )}
+            <Button
+              onClick={handleRefreshModels}
+              variant="secondary"
+              size="sm"
+              disabled={isFetchingModels || !selectedProviderId}
+            >
+              {isFetchingModels
+                ? t("settings.openrouterCloud.testing")
+                : t("settings.postProcessing.api.model.refreshModels")}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <Button
+            onClick={handleTestOpenRouter}
+            variant="primary"
+            size="sm"
+            disabled={selectedProviderId !== "openrouter" || isTestingOpenRouter}
+          >
+            {isTestingOpenRouter
+              ? t("settings.openrouterCloud.testing")
+              : t("settings.openrouterCloud.testPostProcessButton")}
+          </Button>
+          {selectedProviderId !== "openrouter" && (
+            <span className="text-xs text-mid-gray/70">
+              {t("settings.openrouterCloud.testOpenRouterHint")}
+            </span>
+          )}
+        </div>
+
+        {validationMessage.type !== "idle" && (
+          <p
+            className={`text-xs ${
+              validationMessage.type === "success"
+                ? "text-green-500"
+                : "text-red-500"
+            }`}
+          >
+            {validationMessage.text}
+          </p>
+        )}
+      </div>
+    </SettingContainer>
+  );
+};
+
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <SettingsGroup title={t("settings.postProcessing.api.title")}>
+        <PostProcessingApiSettings />
+      </SettingsGroup>
       <SettingsGroup title={t("settings.postProcessing.actions.title")}>
         <PostProcessingActions />
       </SettingsGroup>
