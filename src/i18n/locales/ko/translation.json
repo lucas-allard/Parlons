@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "매우 빠름. 중국어, 영어, 일본어, 한국어, 광둥어."
+      },
+      "openrouter-api": {
+        "name": "OpenRouter API",
+        "description": "Cloud-based transcription via OpenRouter. Requires API key and internet."
       }
     },
     "errors": {
@@ -218,7 +222,26 @@
         "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
+      "tabs": {
+        "transcription": "Transcription",
+        "processing": "Processing"
+      },
+      "processingModels": {
+        "title": "Processing Models",
+        "description": "Save LLM models for use in post-processing actions.",
+        "noModels": "No processing models saved yet. Add one to use in your actions.",
+        "addModel": "Add Processing Model",
+        "provider": "Provider",
+        "apiKey": "API Key",
+        "apiKeyPlaceholder": "Enter API key",
+        "model": "Model",
+        "modelPlaceholder": "Select or type a model",
+        "save": "Save",
+        "cancel": "Cancel",
+        "fetchModels": "Fetch models",
+        "alreadySaved": "This model is already saved."
+      }
     },
     "advanced": {
       "title": "고급",
@@ -227,7 +250,8 @@
         "output": "출력",
         "transcription": "전사",
         "history": "히스토리",
-        "experimental": "실험적"
+        "experimental": "실험적",
+        "cloudModels": "Cloud Models"
       },
       "experimentalToggle": {
         "label": "실험적 기능",
@@ -379,6 +403,29 @@
         "cancel": "취소",
         "selectToEdit": "세부 정보를 보고 편집하려면 위에서 프롬프트를 선택하세요.",
         "createFirst": "첫 번째 후처리 프롬프트를 만들려면 위의 '새 프롬프트 만들기'를 클릭하세요."
+      },
+      "actions": {
+        "title": "Actions",
+        "description": "Bind Ctrl+number keys (1-9) to custom prompts. Press a shortcut during recording to apply the action after transcription.",
+        "noActions": "No actions configured yet.",
+        "createFirst": "Create your first action to process transcriptions with your configured provider.",
+        "addAction": "Add Action",
+        "editAction": "Edit Action",
+        "key": "Key",
+        "keyLabel": "Key (1-9)",
+        "name": "Name",
+        "namePlaceholder": "e.g. Email mode",
+        "prompt": "Prompt",
+        "promptPlaceholder": "e.g. Format this as a professional email with greeting and sign-off. Add line breaks between paragraphs.",
+        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "model": "Model (optional)",
+        "modelPlaceholder": "Select a model",
+        "modelTip": "Select a specific model for this action, or use the default from the API section.",
+        "defaultModel": "Default",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "maxActionsReached": "Maximum of 9 actions reached."
       }
     },
     "history": {
@@ -390,7 +437,13 @@
       "save": "변환된 텍스트 저장",
       "unsave": "저장에서 제거",
       "delete": "항목 삭제",
-      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요."
+      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요.",
+      "reprocess": "Reprocess with different model",
+      "reprocessing": "Reprocessing...",
+      "selectModel": "Select model",
+      "originalTranscript": "Original",
+      "postProcessed": "Post-processed",
+      "action": "Action {{key}}"
     },
     "debug": {
       "title": "디버그",
@@ -492,6 +545,40 @@
           "details": "Parler는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
       }
+    },
+    "longAudioModel": {
+      "title": "Long Audio Model",
+      "description": "Automatically switch to a different model when recording duration exceeds the threshold.",
+      "modelLabel": "Model for long recordings",
+      "modelDescription": "Select a model to use for recordings longer than the threshold.",
+      "thresholdLabel": "Duration threshold (seconds)",
+      "thresholdDescription": "Switch to the long audio model when recording exceeds this duration.",
+      "disabled": "Disabled",
+      "seconds": "{{value}}s"
+    },
+    "openrouterCloud": {
+      "title": "OpenRouter Cloud",
+      "description": "Use OpenRouter for cloud-based transcription. Requires an API key and a model.",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your OpenRouter API key",
+      "model": "Model",
+      "modelDescription": "Set the OpenRouter model ID to use for cloud transcription.",
+      "modelPlaceholder": "openai/gpt-4o-mini-transcribe",
+      "configRequired": "OpenRouter Configuration Required",
+      "configRequiredDescription": "Configure both the OpenRouter API key and cloud model before selecting this transcription model.",
+      "refreshModels": "Refresh models",
+      "testTitle": "Connection Test",
+      "testDescription": "Validate your OpenRouter cloud transcription configuration.",
+      "testButton": "Test OpenRouter Cloud",
+      "testPostProcessButton": "Test OpenRouter",
+      "testOpenRouterHint": "Switch provider to OpenRouter to run this test.",
+      "testing": "Testing...",
+      "modelsLoaded": "{{count}} models loaded",
+      "testSuccess": "OpenRouter validation succeeded.",
+      "testSuccessWithTranscript": "OpenRouter validation succeeded. Transcript: {{transcript}}",
+      "postProcessTestSuccess": "OpenRouter post-processing test succeeded. Response: {{response}}",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "footer": {

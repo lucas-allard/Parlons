@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe, RefreshCcw, X } from "lucide-react";
@@ -52,8 +58,7 @@ const ProcessingModelsSection: React.FC = () => {
     (providerId: string) => {
       setSelectedProviderId(providerId);
       setSelectedModel("");
-      const existingKey =
-        settings?.post_process_api_keys?.[providerId] ?? "";
+      const existingKey = settings?.post_process_api_keys?.[providerId] ?? "";
       setApiKey(existingKey);
     },
     [settings],
@@ -70,7 +75,12 @@ const ProcessingModelsSection: React.FC = () => {
     } finally {
       setIsFetching(false);
     }
-  }, [selectedProviderId, apiKey, fetchPostProcessModels, updatePostProcessApiKey]);
+  }, [
+    selectedProviderId,
+    apiKey,
+    fetchPostProcessModels,
+    updatePostProcessApiKey,
+  ]);
 
   const handleSave = useCallback(async () => {
     if (!selectedProviderId || !selectedModel) return;
@@ -255,8 +265,12 @@ export const ModelsSettings: React.FC = () => {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
-  const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
-  const [geminiKeyInput, setGeminiKeyInput] = useState("");
+  const [showOpenRouterConfigDialog, setShowOpenRouterConfigDialog] =
+    useState(false);
+  const [openRouterCloudApiKeyInput, setOpenRouterCloudApiKeyInput] =
+    useState("");
+  const [openRouterCloudModelInput, setOpenRouterCloudModelInput] =
+    useState("");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
   const { getSetting, updateSetting } = useSettings();
@@ -313,8 +327,13 @@ export const ModelsSettings: React.FC = () => {
     return LANGUAGES.find((lang) => lang.value === languageFilter)?.label || "";
   }, [languageFilter, t]);
 
-  const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
-  const hasGeminiKey = !!geminiApiKey && geminiApiKey.length > 0;
+  const openRouterCloudApiKey =
+    (getSetting("openrouter_cloud_api_key") as string | null | undefined) || "";
+  const openRouterCloudModel =
+    (getSetting("openrouter_cloud_model") as string | undefined) || "";
+  const hasOpenRouterCloudConfig =
+    openRouterCloudApiKey.trim().length > 0 &&
+    openRouterCloudModel.trim().length > 0;
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) {
@@ -327,7 +346,7 @@ export const ModelsSettings: React.FC = () => {
       return "switching";
     }
     if (modelId === currentModel) {
-      if (modelId === "gemini-api" && !hasGeminiKey) {
+      if (modelId === "openrouter-api" && !hasOpenRouterCloudConfig) {
         return "available";
       }
       return "active";
@@ -350,9 +369,10 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelSelect = async (modelId: string) => {
-    if (modelId === "gemini-api" && !hasGeminiKey) {
-      setGeminiKeyInput("");
-      setShowGeminiKeyDialog(true);
+    if (modelId === "openrouter-api" && !hasOpenRouterCloudConfig) {
+      setOpenRouterCloudApiKeyInput(openRouterCloudApiKey);
+      setOpenRouterCloudModelInput(openRouterCloudModel);
+      setShowOpenRouterConfigDialog(true);
       return;
     }
     setSwitchingModelId(modelId);
@@ -363,14 +383,16 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
-  const handleGeminiKeySave = async () => {
-    const key = geminiKeyInput.trim();
-    if (!key) return;
-    await updateSetting("gemini_api_key", key);
-    setShowGeminiKeyDialog(false);
-    setSwitchingModelId("gemini-api");
+  const handleOpenRouterCloudConfigSave = async () => {
+    const key = openRouterCloudApiKeyInput.trim();
+    const model = openRouterCloudModelInput.trim();
+    if (!key || !model) return;
+    await updateSetting("openrouter_cloud_api_key", key);
+    await updateSetting("openrouter_cloud_model", model);
+    setShowOpenRouterConfigDialog(false);
+    setSwitchingModelId("openrouter-api");
     try {
-      await selectModel("gemini-api");
+      await selectModel("openrouter-api");
     } finally {
       setSwitchingModelId(null);
     }
@@ -428,9 +450,10 @@ export const ModelsSettings: React.FC = () => {
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
-      const isGeminiWithoutKey = model.id === "gemini-api" && !hasGeminiKey;
+      const isOpenRouterWithoutConfig =
+        model.id === "openrouter-api" && !hasOpenRouterCloudConfig;
       if (
-        !isGeminiWithoutKey &&
+        !isOpenRouterWithoutConfig &&
         (model.is_custom ||
           model.is_downloaded ||
           model.id in downloadingModels ||
@@ -459,7 +482,7 @@ export const ModelsSettings: React.FC = () => {
     downloadingModels,
     extractingModels,
     currentModel,
-    hasGeminiKey,
+    hasOpenRouterCloudConfig,
   ]);
 
   if (loading) {
@@ -643,12 +666,12 @@ export const ModelsSettings: React.FC = () => {
         </div>
       ) : null}
 
-      {showGeminiKeyDialog && (
+      {showOpenRouterConfigDialog && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => setShowGeminiKeyDialog(false)}
+          onClick={() => setShowOpenRouterConfigDialog(false)}
           onKeyDown={(e) => {
-            if (e.key === "Escape") setShowGeminiKeyDialog(false);
+            if (e.key === "Escape") setShowOpenRouterConfigDialog(false);
           }}
         >
           <div
@@ -657,38 +680,51 @@ export const ModelsSettings: React.FC = () => {
           >
             <div>
               <h3 className="text-base font-semibold">
-                {t("settings.gemini.apiKeyRequired")}
+                {t("settings.openrouterCloud.configRequired")}
               </h3>
               <p className="text-sm text-text/60 mt-1">
-                {t("settings.gemini.apiKeyRequiredDescription")}
+                {t("settings.openrouterCloud.configRequiredDescription")}
               </p>
             </div>
             <Input
               autoFocus
               type="password"
-              value={geminiKeyInput}
-              onChange={(e) => setGeminiKeyInput(e.target.value)}
+              value={openRouterCloudApiKeyInput}
+              onChange={(e) => setOpenRouterCloudApiKeyInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleGeminiKeySave();
+                if (e.key === "Enter") handleOpenRouterCloudConfigSave();
               }}
-              placeholder={t("settings.gemini.apiKeyPlaceholder")}
+              placeholder={t("settings.openrouterCloud.apiKeyPlaceholder")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              value={openRouterCloudModelInput}
+              onChange={(e) => setOpenRouterCloudModelInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleOpenRouterCloudConfigSave();
+              }}
+              placeholder={t("settings.openrouterCloud.modelPlaceholder")}
               className="w-full"
             />
             <div className="flex justify-end gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowGeminiKeyDialog(false)}
+                onClick={() => setShowOpenRouterConfigDialog(false)}
               >
-                {t("settings.gemini.cancel")}
+                {t("settings.openrouterCloud.cancel")}
               </Button>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={handleGeminiKeySave}
-                disabled={!geminiKeyInput.trim()}
+                onClick={handleOpenRouterCloudConfigSave}
+                disabled={
+                  !openRouterCloudApiKeyInput.trim() ||
+                  !openRouterCloudModelInput.trim()
+                }
               >
-                {t("settings.gemini.save")}
+                {t("settings.openrouterCloud.save")}
               </Button>
             </div>
           </div>

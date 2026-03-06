@@ -6,11 +6,11 @@ pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
 mod commands;
-pub mod gemini_client;
 mod helpers;
 mod input;
 mod llm_client;
 mod managers;
+mod openrouter_client;
 mod overlay;
 mod settings;
 mod shortcut;
@@ -355,8 +355,11 @@ pub fn run(cli_args: CliArgs) {
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
         commands::history::reprocess_history_entry,
-        commands::gemini::change_gemini_api_key_setting,
-        commands::gemini::change_gemini_model_setting,
+        commands::openrouter_cloud::change_openrouter_cloud_api_key_setting,
+        commands::openrouter_cloud::change_openrouter_cloud_model_setting,
+        commands::openrouter_cloud::fetch_openrouter_cloud_models,
+        commands::openrouter_cloud::validate_openrouter_post_process,
+        commands::openrouter_cloud::validate_openrouter_cloud_transcription,
         helpers::clamshell::is_laptop,
     ]);
 

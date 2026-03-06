@@ -1,6 +1,10 @@
 name: "Release"
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   create-release:
@@ -18,11 +22,14 @@ jobs:
         id: get-version
         shell: bash
         run: |
-          VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
-          echo "Application version from tauri.conf.json: $VERSION"
+          RAW_VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
+          MAJOR_MINOR=$(echo "$RAW_VERSION" | awk -F. '{print $1 "." $2}')
+          VERSION="${MAJOR_MINOR}.${GITHUB_RUN_NUMBER}"
+          echo "Base version from tauri.conf.json: $RAW_VERSION"
+          echo "Computed CI version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Create Draft Release
+      - name: Create Release
         id: create-release
         uses: actions/github-script@v7
         with:
@@ -32,7 +39,7 @@ jobs:
               repo: context.repo.repo,
               tag_name: `v${{ steps.get-version.outputs.version }}`,
               name: `v${{ steps.get-version.outputs.version }}`,
-              draft: true,
+              draft: false,
               prerelease: false,
               generate_release_notes: true
             })
@@ -59,4 +66,5 @@ jobs:
       asset-prefix: "parler-lucas"
       upload-artifacts: false
       release-id: ${{ needs.create-release.outputs.release-id }}
+      version-override: ${{ needs.create-release.outputs.version }}
     secrets: inherit

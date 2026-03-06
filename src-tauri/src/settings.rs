@@ -383,10 +383,10 @@ pub struct AppSettings {
     pub long_audio_model: Option<String>,
     #[serde(default = "default_long_audio_threshold_seconds")]
     pub long_audio_threshold_seconds: f32,
-    #[serde(default)]
-    pub gemini_api_key: Option<String>,
-    #[serde(default = "default_gemini_model")]
-    pub gemini_model: String,
+    #[serde(default, alias = "gemini_api_key")]
+    pub openrouter_cloud_api_key: Option<String>,
+    #[serde(default = "default_openrouter_cloud_model", alias = "gemini_model")]
+    pub openrouter_cloud_model: String,
     #[serde(default)]
     pub post_process_actions: Vec<PostProcessAction>,
     #[serde(default)]
@@ -479,7 +479,7 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "openai".to_string()
+    "openrouter".to_string()
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -550,15 +550,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         });
     }
 
-    providers.push(PostProcessProvider {
-        id: "gemini".to_string(),
-        label: "Gemini".to_string(),
-        base_url: "https://generativelanguage.googleapis.com/v1beta".to_string(),
-        allow_base_url_edit: false,
-        models_endpoint: None,
-        supports_structured_output: false,
-    });
-
     // Custom provider always comes last
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
@@ -614,12 +605,39 @@ fn default_long_audio_threshold_seconds() -> f32 {
     10.0
 }
 
-fn default_gemini_model() -> String {
-    "gemini-2.5-flash".to_string()
+fn default_openrouter_cloud_model() -> String {
+    String::new()
 }
 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
+
+    // Migrate deprecated Gemini provider to OpenRouter.
+    if settings.post_process_provider_id == "gemini" {
+        settings.post_process_provider_id = "openrouter".to_string();
+        changed = true;
+    }
+
+    // Migrate cloud model selection from gemini-api to openrouter-api.
+    if settings.selected_model == "gemini-api" {
+        settings.selected_model = "openrouter-api".to_string();
+        changed = true;
+    }
+
+    // Remove deprecated Gemini provider/settings from existing stores.
+    let providers_len = settings.post_process_providers.len();
+    settings.post_process_providers.retain(|p| p.id != "gemini");
+    if settings.post_process_providers.len() != providers_len {
+        changed = true;
+    }
+
+    if settings.post_process_api_keys.remove("gemini").is_some() {
+        changed = true;
+    }
+    if settings.post_process_models.remove("gemini").is_some() {
+        changed = true;
+    }
+
     for provider in default_post_process_providers() {
         // Use match to do a single lookup - either sync existing or add new
         match settings
@@ -669,6 +687,15 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                 changed = true;
             }
         }
+    }
+
+    let provider_exists = settings
+        .post_process_providers
+        .iter()
+        .any(|p| p.id == settings.post_process_provider_id);
+    if !provider_exists {
+        settings.post_process_provider_id = default_post_process_provider_id();
+        changed = true;
     }
 
     changed
@@ -774,8 +801,8 @@ pub fn get_default_settings() -> AppSettings {
         external_script_path: None,
         long_audio_model: None,
         long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
-        gemini_api_key: None,
-        gemini_model: default_gemini_model(),
+        openrouter_cloud_api_key: None,
+        openrouter_cloud_model: default_openrouter_cloud_model(),
         post_process_actions: Vec::new(),
         saved_processing_models: Vec::new(),
     }
@@ -920,5 +947,62 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_use_openrouter_provider() {
+        let settings = get_default_settings();
+        assert_eq!(settings.post_process_provider_id, "openrouter");
+    }
+
+    #[test]
+    fn migrates_gemini_provider_and_model_to_openrouter() {
+        let mut settings = get_default_settings();
+        settings.post_process_provider_id = "gemini".to_string();
+        settings.selected_model = "gemini-api".to_string();
+        settings
+            .post_process_api_keys
+            .insert("gemini".to_string(), "k".to_string());
+        settings
+            .post_process_models
+            .insert("gemini".to_string(), "gemini-2.5-flash".to_string());
+        settings.post_process_providers.push(PostProcessProvider {
+            id: "gemini".to_string(),
+            label: "Gemini".to_string(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: None,
+            supports_structured_output: false,
+        });
+
+        let changed = ensure_post_process_defaults(&mut settings);
+        assert!(changed);
+        assert_eq!(settings.post_process_provider_id, "openrouter");
+        assert_eq!(settings.selected_model, "openrouter-api");
+        assert!(!settings.post_process_api_keys.contains_key("gemini"));
+        assert!(!settings.post_process_models.contains_key("gemini"));
+        assert!(settings
+            .post_process_providers
+            .iter()
+            .all(|p| p.id != "gemini"));
+    }
+
+    #[test]
+    fn deserializes_legacy_gemini_cloud_fields_into_openrouter() {
+        let value = serde_json::json!({
+            "bindings": {},
+            "push_to_talk": true,
+            "audio_feedback": false,
+            "selected_model": "",
+            "gemini_api_key": "legacy-key",
+            "gemini_model": "legacy-model"
+        });
+
+        let settings: AppSettings = serde_json::from_value(value).unwrap();
+        assert_eq!(
+            settings.openrouter_cloud_api_key.as_deref(),
+            Some("legacy-key")
+        );
+        assert_eq!(settings.openrouter_cloud_model, "legacy-model");
     }
 }

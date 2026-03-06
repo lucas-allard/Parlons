@@ -42,7 +42,7 @@ enum LoadedEngine {
     Moonshine(MoonshineEngine),
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
-    GeminiApi,
+    OpenRouterApi,
 }
 
 #[derive(Clone)]
@@ -166,7 +166,7 @@ impl TranscriptionManager {
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
-                    LoadedEngine::GeminiApi => {}
+                    LoadedEngine::OpenRouterApi => {}
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -242,7 +242,7 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let model_path = if matches!(model_info.engine_type, EngineType::GeminiApi) {
+        let model_path = if matches!(model_info.engine_type, EngineType::OpenRouterApi) {
             std::path::PathBuf::new()
         } else {
             self.model_manager.get_model_path(model_id)?
@@ -352,15 +352,25 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::SenseVoice(engine)
             }
-            EngineType::GeminiApi => {
+            EngineType::OpenRouterApi => {
                 let settings = get_settings(&self.app_handle);
-                if settings.gemini_api_key.is_none()
-                    || settings
-                        .gemini_api_key
-                        .as_ref()
-                        .map_or(true, |k| k.is_empty())
-                {
-                    let error_msg = "Gemini API key not configured";
+                let key_missing = settings
+                    .openrouter_cloud_api_key
+                    .as_ref()
+                    .map_or(true, |k| k.trim().is_empty());
+                let model_missing = settings.openrouter_cloud_model.trim().is_empty();
+
+                let maybe_error = if key_missing && model_missing {
+                    Some("OpenRouter cloud API key and model are not configured")
+                } else if key_missing {
+                    Some("OpenRouter cloud API key is not configured")
+                } else if model_missing {
+                    Some("OpenRouter cloud model is not configured")
+                } else {
+                    None
+                };
+
+                if let Some(error_msg) = maybe_error {
                     let _ = self.app_handle.emit(
                         "model-state-changed",
                         ModelStateEvent {
@@ -372,7 +382,7 @@ impl TranscriptionManager {
                     );
                     return Err(anyhow::anyhow!(error_msg));
                 }
-                LoadedEngine::GeminiApi
+                LoadedEngine::OpenRouterApi
             }
         };
 
@@ -468,24 +478,32 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Handle Gemini API separately (requires async HTTP call)
+        // Handle OpenRouter cloud API separately (requires async HTTP call)
         {
             let engine_guard = self.lock_engine();
-            if let Some(LoadedEngine::GeminiApi) = engine_guard.as_ref() {
+            if let Some(LoadedEngine::OpenRouterApi) = engine_guard.as_ref() {
                 drop(engine_guard);
                 let api_key = settings
-                    .gemini_api_key
+                    .openrouter_cloud_api_key
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Gemini API key not configured"))?
-                    .clone();
-                let gemini_model = settings.gemini_model.clone();
+                    .ok_or_else(|| anyhow::anyhow!("OpenRouter cloud API key is not configured"))?
+                    .trim()
+                    .to_string();
+                let openrouter_model = settings.openrouter_cloud_model.trim().to_string();
+                if openrouter_model.is_empty() {
+                    return Err(anyhow::anyhow!("OpenRouter cloud model is not configured"));
+                }
 
                 // Use block_in_place to safely run async code from a tokio worker thread.
                 // Handle::block_on() panics if called directly from an async context,
                 // so block_in_place tells tokio to move its work off this thread first.
                 let result = tokio::task::block_in_place(|| {
                     tokio::runtime::Handle::current().block_on(
-                        crate::gemini_client::transcribe_audio(&api_key, &gemini_model, &audio),
+                        crate::openrouter_client::transcribe_audio(
+                            &api_key,
+                            &openrouter_model,
+                            &audio,
+                        ),
                     )
                 })?;
 
@@ -502,11 +520,12 @@ impl TranscriptionManager {
 
                 let et = std::time::Instant::now();
                 info!(
-                    "Gemini transcription completed in {}ms",
-                    (et - st).as_millis()
+                    "OpenRouter cloud transcription completed in {}ms (model: {})",
+                    (et - st).as_millis(),
+                    openrouter_model
                 );
 
-                self.maybe_unload_immediately("gemini transcription");
+                self.maybe_unload_immediately("openrouter cloud transcription");
                 return Ok(final_result);
             }
         }
@@ -597,8 +616,8 @@ impl TranscriptionManager {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
-                        LoadedEngine::GeminiApi => {
-                            unreachable!("GeminiApi handled before catch_unwind")
+                        LoadedEngine::OpenRouterApi => {
+                            unreachable!("OpenRouterApi handled before catch_unwind")
                         }
                     }
                 },

@@ -18,7 +18,7 @@ import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
-import { GeminiSettings } from "./GeminiSettings";
+import { OpenRouterCloudSettings } from "./OpenRouterCloudSettings";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ export const AdvancedSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.cloudModels")}>
-        <GeminiSettings />
+        <OpenRouterCloudSettings />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.history")}>

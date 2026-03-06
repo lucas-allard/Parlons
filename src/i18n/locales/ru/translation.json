@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Очень быстрый. Китайский, английский, японский, корейский, кантонский."
+      },
+      "openrouter-api": {
+        "name": "OpenRouter API",
+        "description": "Cloud-based transcription via OpenRouter. Requires API key and internet."
       }
     },
     "errors": {
@@ -153,7 +157,26 @@
       },
       "noModelsMatch": "Нет моделей, соответствующих этому фильтру.",
       "yourModels": "Загруженные модели",
-      "availableModels": "Доступны для загрузки"
+      "availableModels": "Доступны для загрузки",
+      "tabs": {
+        "transcription": "Transcription",
+        "processing": "Processing"
+      },
+      "processingModels": {
+        "title": "Processing Models",
+        "description": "Save LLM models for use in post-processing actions.",
+        "noModels": "No processing models saved yet. Add one to use in your actions.",
+        "addModel": "Add Processing Model",
+        "provider": "Provider",
+        "apiKey": "API Key",
+        "apiKeyPlaceholder": "Enter API key",
+        "model": "Model",
+        "modelPlaceholder": "Select or type a model",
+        "save": "Save",
+        "cancel": "Cancel",
+        "fetchModels": "Fetch models",
+        "alreadySaved": "This model is already saved."
+      }
     },
     "general": {
       "title": "Общие",
@@ -227,7 +250,8 @@
         "output": "Вывод",
         "transcription": "Транскрипция",
         "history": "История",
-        "experimental": "Экспериментальное"
+        "experimental": "Экспериментальное",
+        "cloudModels": "Cloud Models"
       },
       "experimentalToggle": {
         "label": "Экспериментальные функции",
@@ -379,6 +403,29 @@
         "cancel": "Отмена",
         "selectToEdit": "Выберите приглашение выше, чтобы просмотреть и изменить его сведения.",
         "createFirst": "Нажмите «Создать новое приглашение» выше, чтобы создать первое приглашение для постобработки."
+      },
+      "actions": {
+        "title": "Actions",
+        "description": "Bind Ctrl+number keys (1-9) to custom prompts. Press a shortcut during recording to apply the action after transcription.",
+        "noActions": "No actions configured yet.",
+        "createFirst": "Create your first action to process transcriptions with your configured provider.",
+        "addAction": "Add Action",
+        "editAction": "Edit Action",
+        "key": "Key",
+        "keyLabel": "Key (1-9)",
+        "name": "Name",
+        "namePlaceholder": "e.g. Email mode",
+        "prompt": "Prompt",
+        "promptPlaceholder": "e.g. Format this as a professional email with greeting and sign-off. Add line breaks between paragraphs.",
+        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "model": "Model (optional)",
+        "modelPlaceholder": "Select a model",
+        "modelTip": "Select a specific model for this action, or use the default from the API section.",
+        "defaultModel": "Default",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "maxActionsReached": "Maximum of 9 actions reached."
       }
     },
     "history": {
@@ -390,7 +437,13 @@
       "save": "Сохранить транскрипцию",
       "unsave": "Удалить из сохраненных",
       "delete": "Удалить запись",
-      "deleteError": "Не удалось удалить запись. Пожалуйста, попробуйте еще раз."
+      "deleteError": "Не удалось удалить запись. Пожалуйста, попробуйте еще раз.",
+      "reprocess": "Reprocess with different model",
+      "reprocessing": "Reprocessing...",
+      "selectModel": "Select model",
+      "originalTranscript": "Original",
+      "postProcessed": "Post-processed",
+      "action": "Action {{key}}"
     },
     "debug": {
       "title": "Отлаживать",
@@ -492,6 +545,40 @@
           "details": "Parler использует Whisper.cpp для быстрой локальной обработки речи в текст. Спасибо великолепной работе Георгия Герганова и его участников."
         }
       }
+    },
+    "longAudioModel": {
+      "title": "Long Audio Model",
+      "description": "Automatically switch to a different model when recording duration exceeds the threshold.",
+      "modelLabel": "Model for long recordings",
+      "modelDescription": "Select a model to use for recordings longer than the threshold.",
+      "thresholdLabel": "Duration threshold (seconds)",
+      "thresholdDescription": "Switch to the long audio model when recording exceeds this duration.",
+      "disabled": "Disabled",
+      "seconds": "{{value}}s"
+    },
+    "openrouterCloud": {
+      "title": "OpenRouter Cloud",
+      "description": "Use OpenRouter for cloud-based transcription. Requires an API key and a model.",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your OpenRouter API key",
+      "model": "Model",
+      "modelDescription": "Set the OpenRouter model ID to use for cloud transcription.",
+      "modelPlaceholder": "openai/gpt-4o-mini-transcribe",
+      "configRequired": "OpenRouter Configuration Required",
+      "configRequiredDescription": "Configure both the OpenRouter API key and cloud model before selecting this transcription model.",
+      "refreshModels": "Refresh models",
+      "testTitle": "Connection Test",
+      "testDescription": "Validate your OpenRouter cloud transcription configuration.",
+      "testButton": "Test OpenRouter Cloud",
+      "testPostProcessButton": "Test OpenRouter",
+      "testOpenRouterHint": "Switch provider to OpenRouter to run this test.",
+      "testing": "Testing...",
+      "modelsLoaded": "{{count}} models loaded",
+      "testSuccess": "OpenRouter validation succeeded.",
+      "testSuccessWithTranscript": "OpenRouter validation succeeded. Transcript: {{transcript}}",
+      "postProcessTestSuccess": "OpenRouter post-processing test succeeded. Response: {{response}}",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "footer": {

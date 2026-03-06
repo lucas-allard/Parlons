@@ -1,7 +1,7 @@
 pub mod audio;
-pub mod gemini;
 pub mod history;
 pub mod models;
+pub mod openrouter_cloud;
 pub mod transcription;
 
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};

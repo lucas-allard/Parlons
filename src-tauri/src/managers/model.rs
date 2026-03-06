@@ -23,7 +23,7 @@ pub enum EngineType {
     Moonshine,
     MoonshineStreaming,
     SenseVoice,
-    GeminiApi,
+    OpenRouterApi,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -399,12 +399,12 @@ impl ModelManager {
         );
 
         available_models.insert(
-            "gemini-api".to_string(),
+            "openrouter-api".to_string(),
             ModelInfo {
-                id: "gemini-api".to_string(),
-                name: "Gemini API".to_string(),
+                id: "openrouter-api".to_string(),
+                name: "OpenRouter API".to_string(),
                 description:
-                    "Cloud-based transcription via Google Gemini. Requires API key and internet."
+                    "Cloud-based transcription via OpenRouter. Requires API key and internet."
                         .to_string(),
                 filename: "".to_string(),
                 url: None,
@@ -413,7 +413,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::GeminiApi,
+                engine_type: EngineType::OpenRouterApi,
                 accuracy_score: 0.9,
                 speed_score: 0.7,
                 supports_translation: false,
@@ -489,7 +489,7 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
-            if matches!(model.engine_type, EngineType::GeminiApi) {
+            if matches!(model.engine_type, EngineType::OpenRouterApi) {
                 continue;
             }
             if model.is_directory {
@@ -561,11 +561,11 @@ impl ModelManager {
         }
 
         // If no model is selected, pick the first downloaded local model.
-        // Gemini is cloud-only and should not be auto-selected.
+        // OpenRouter is cloud-only and should not be auto-selected.
         if settings.selected_model.is_empty() {
             let models = self.available_models.lock().unwrap();
             if let Some(available_model) = models.values().find(|model| {
-                model.is_downloaded && !matches!(model.engine_type, EngineType::GeminiApi)
+                model.is_downloaded && !matches!(model.engine_type, EngineType::OpenRouterApi)
             }) {
                 info!(
                     "Auto-selecting model: {} ({})",
@@ -712,7 +712,7 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if matches!(model_info.engine_type, EngineType::GeminiApi) {
+        if matches!(model_info.engine_type, EngineType::OpenRouterApi) {
             return Ok(());
         }
 
@@ -1068,7 +1068,7 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if matches!(model_info.engine_type, EngineType::GeminiApi) {
+        if matches!(model_info.engine_type, EngineType::OpenRouterApi) {
             return Err(anyhow::anyhow!("Cannot delete cloud model"));
         }
 
@@ -1136,7 +1136,7 @@ impl ModelManager {
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if matches!(model_info.engine_type, EngineType::GeminiApi) {
+        if matches!(model_info.engine_type, EngineType::OpenRouterApi) {
             return Err(anyhow::anyhow!(
                 "Cloud model has no local path: {}",
                 model_id
