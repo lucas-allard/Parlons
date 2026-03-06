@@ -618,7 +618,15 @@ impl ShortcutAction for TranscribeAction {
                                 final_text = converted_text;
                             }
 
-                            let selected_action = selected_action_key.and_then(|key| {
+                            let mut effective_action_key = selected_action_key;
+
+                            // If no shortcut action was triggered, but post-processing is enabled globally,
+                            // use the default post-process action key if one is set.
+                            if effective_action_key.is_none() && settings.post_process_enabled {
+                                effective_action_key = settings.default_post_process_action_key;
+                            }
+
+                            let selected_action = effective_action_key.and_then(|key| {
                                 settings
                                     .post_process_actions
                                     .iter()
