@@ -698,6 +698,19 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
         changed = true;
     }
 
+    // Auto-select the first prompt if none is selected and prompts exist
+    if settings.post_process_selected_prompt_id.is_none()
+        && !settings.post_process_prompts.is_empty()
+    {
+        let first_prompt_id = settings.post_process_prompts[0].id.clone();
+        debug!(
+            "Auto-selecting first post-process prompt: '{}'",
+            first_prompt_id
+        );
+        settings.post_process_selected_prompt_id = Some(first_prompt_id);
+        changed = true;
+    }
+
     changed
 }
 
@@ -960,7 +973,9 @@ mod tests {
         let mut settings = get_default_settings();
         settings.post_process_provider_id = "gemini".to_string();
         settings.selected_model = "gemini-api".to_string();
-        settings.post_process_api_keys.insert("gemini".to_string(), "k".to_string());
+        settings
+            .post_process_api_keys
+            .insert("gemini".to_string(), "k".to_string());
         settings
             .post_process_models
             .insert("gemini".to_string(), "gemini-2.5-flash".to_string());

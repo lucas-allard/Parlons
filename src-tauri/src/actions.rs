@@ -62,7 +62,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
-            debug!("Post-processing enabled but no provider is selected");
+            warn!("Post-processing enabled but no provider is selected");
             return None;
         }
     };
@@ -74,7 +74,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .unwrap_or_default();
 
     if model.trim().is_empty() {
-        debug!(
+        warn!(
             "Post-processing skipped because provider '{}' has no model configured",
             provider.id
         );
@@ -84,7 +84,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     let selected_prompt_id = match &settings.post_process_selected_prompt_id {
         Some(id) => id.clone(),
         None => {
-            debug!("Post-processing skipped because no prompt is selected");
+            warn!("Post-processing skipped because no prompt is selected");
             return None;
         }
     };
@@ -96,7 +96,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     {
         Some(prompt) => prompt.prompt.clone(),
         None => {
-            debug!(
+            warn!(
                 "Post-processing skipped because prompt '{}' was not found",
                 selected_prompt_id
             );
@@ -105,7 +105,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     };
 
     if prompt.trim().is_empty() {
-        debug!("Post-processing skipped because the selected prompt is empty");
+        warn!("Post-processing skipped because the selected prompt is empty");
         return None;
     }
 
