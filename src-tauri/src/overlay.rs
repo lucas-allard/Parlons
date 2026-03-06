@@ -330,6 +330,38 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<((f64, f64), tau
     None
 }
 
+#[cfg(target_os = "windows")]
+fn overlay_position_to_tauri_position(
+    logical_pos: (f64, f64),
+    monitor: &tauri::Monitor,
+) -> tauri::Position {
+    let scale = monitor.scale_factor();
+    let (x, y) = logical_pos;
+    tauri::Position::Physical(tauri::PhysicalPosition {
+        x: (x * scale).round() as i32,
+        y: (y * scale).round() as i32,
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+fn overlay_position_to_tauri_position(
+    logical_pos: (f64, f64),
+    _monitor: &tauri::Monitor,
+) -> tauri::Position {
+    let (x, y) = logical_pos;
+    tauri::Position::Logical(tauri::LogicalPosition { x, y })
+}
+
+fn apply_overlay_position(
+    overlay_window: &tauri::webview::WebviewWindow,
+    position_data: Option<((f64, f64), tauri::Monitor)>,
+) {
+    if let Some((logical_pos, monitor)) = position_data {
+        let position = overlay_position_to_tauri_position(logical_pos, &monitor);
+        let _ = overlay_window.set_position(position);
+    }
+}
+
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
@@ -364,12 +396,16 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     .focused(false)
     .visible(false);
 
+    #[cfg(not(target_os = "windows"))]
     if let Some((x, y)) = position {
         builder = builder.position(x, y);
     }
 
     match builder.build() {
         Ok(window) => {
+            #[cfg(target_os = "windows")]
+            apply_overlay_position(&window, position_data);
+
             #[cfg(target_os = "linux")]
             {
                 // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
@@ -471,10 +507,7 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
             }
         }
 
-        if let Some(((x, y), _)) = position_data {
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-        }
+        apply_overlay_position(&overlay_window, position_data);
     }
 }
 
