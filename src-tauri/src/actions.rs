@@ -236,7 +236,12 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 
     // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // If ${output} is not present, append the transcription to the end
+    let processed_prompt = if prompt.contains("${output}") {
+        prompt.replace("${output}", transcription)
+    } else {
+        format!("{}\n\n{}", prompt, transcription)
+    };
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
