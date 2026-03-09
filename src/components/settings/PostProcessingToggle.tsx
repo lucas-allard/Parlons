@@ -118,7 +118,12 @@ export const PostProcessingToggle: React.FC<PostProcessingToggleProps> =
                         {/* Star indicator for selected */}
                         {isSelected && (
                           <span className="text-logo-primary text-[10px] ml-0.5">
-                            ★
+                            {t(
+                              "settings.postProcessing.actions.selectedIndicator",
+                              {
+                                defaultValue: "★",
+                              },
+                            )}
                           </span>
                         )}
                       </button>
