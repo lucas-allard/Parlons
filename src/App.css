@@ -101,3 +101,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-logo-primary);
 }
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+    transform: translateY(0);
+  }
+}
